@@ -184,3 +184,69 @@ echo "1. Update configuration in /etc/adminisoftware/config.env"
 echo "2. Deploy the application to /opt/adminisoftware"
 echo "3. Run: systemctl start adminisoftware"
 echo "4. Run: systemctl start nginx"
+#!/bin/bash
+
+# AdminiSoftware Setup Script
+echo "Starting AdminiSoftware setup..."
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run as root (use sudo)"
+    exit 1
+fi
+
+# Update system
+echo "Updating system packages..."
+apt-get update && apt-get upgrade -y
+
+# Install dependencies
+echo "Installing dependencies..."
+apt-get install -y curl wget git nginx postgresql redis-server
+
+# Install Go
+echo "Installing Go..."
+GO_VERSION="1.21.0"
+wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
+source /etc/profile
+
+# Install Node.js
+echo "Installing Node.js..."
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+apt-get install -y nodejs
+
+# Create adminisoftware user
+echo "Creating adminisoftware user..."
+useradd -r -s /bin/false adminisoftware
+mkdir -p /opt/adminisoftware
+chown adminisoftware:adminisoftware /opt/adminisoftware
+
+# Setup PostgreSQL
+echo "Setting up PostgreSQL..."
+sudo -u postgres createuser adminisoftware
+sudo -u postgres createdb adminisoftware_db
+sudo -u postgres psql -c "ALTER USER adminisoftware PASSWORD 'secure_password';"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE adminisoftware_db TO adminisoftware;"
+
+# Setup Redis
+echo "Setting up Redis..."
+systemctl enable redis-server
+systemctl start redis-server
+
+# Setup Nginx
+echo "Setting up Nginx..."
+systemctl enable nginx
+
+# Create directories
+mkdir -p /var/log/adminisoftware
+mkdir -p /var/lib/adminisoftware
+mkdir -p /etc/adminisoftware
+
+# Set permissions
+chown -R adminisoftware:adminisoftware /var/log/adminisoftware
+chown -R adminisoftware:adminisoftware /var/lib/adminisoftware
+chown -R adminisoftware:adminisoftware /etc/adminisoftware
+
+echo "Basic setup completed!"
+echo "Please configure your environment variables and run the application."

@@ -105,3 +105,59 @@ if [ ! -z "$REMOTE_BACKUP_SCRIPT" ] && [ -f "$REMOTE_BACKUP_SCRIPT" ]; then
     echo "Uploading to remote storage..."
     "$REMOTE_BACKUP_SCRIPT" "$BACKUP_DIR/${BACKUP_NAME}.tar.gz"
 fi
+#!/bin/bash
+
+# AdminiSoftware Backup Script
+
+# Configuration
+BACKUP_DIR="/var/backups/adminisoftware"
+DB_NAME="adminisoftware_db"
+DB_USER="adminisoftware"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+RETENTION_DAYS=30
+
+# Create backup directory
+mkdir -p $BACKUP_DIR
+
+echo "Starting AdminiSoftware backup at $(date)"
+
+# Database backup
+echo "Backing up database..."
+pg_dump -U $DB_USER -h localhost $DB_NAME > $BACKUP_DIR/database_$TIMESTAMP.sql
+gzip $BACKUP_DIR/database_$TIMESTAMP.sql
+
+# Application files backup
+echo "Backing up application files..."
+tar -czf $BACKUP_DIR/app_files_$TIMESTAMP.tar.gz /opt/adminisoftware
+
+# Configuration backup
+echo "Backing up configuration..."
+tar -czf $BACKUP_DIR/config_$TIMESTAMP.tar.gz /etc/adminisoftware
+
+# Log files backup
+echo "Backing up logs..."
+tar -czf $BACKUP_DIR/logs_$TIMESTAMP.tar.gz /var/log/adminisoftware
+
+# Clean up old backups
+echo "Cleaning up old backups..."
+find $BACKUP_DIR -name "*.sql.gz" -mtime +$RETENTION_DAYS -delete
+find $BACKUP_DIR -name "*.tar.gz" -mtime +$RETENTION_DAYS -delete
+
+echo "Backup completed at $(date)"
+
+# Create backup report
+cat > $BACKUP_DIR/backup_report_$TIMESTAMP.txt << EOF
+AdminiSoftware Backup Report
+Date: $(date)
+Backup Location: $BACKUP_DIR
+
+Files Created:
+- database_$TIMESTAMP.sql.gz
+- app_files_$TIMESTAMP.tar.gz
+- config_$TIMESTAMP.tar.gz
+- logs_$TIMESTAMP.tar.gz
+
+Status: Success
+EOF
+
+echo "Backup report saved to $BACKUP_DIR/backup_report_$TIMESTAMP.txt"

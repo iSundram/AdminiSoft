@@ -197,3 +197,51 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **AdminiSoftware** - Empowering web hosting management with modern technology.
+# AdminiSoftware
+
+A modern, open-source control panel alternative to cPanel/WHM built with Go and Vue.js.
+
+## Quick Start
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/adminisoftware/adminisoftware.git
+   cd AdminiSoftware
+   ```
+
+2. **Run setup**:
+   ```bash
+   sudo ./scripts/setup.sh
+   ```
+
+3. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your settings
+   ```
+
+4. **Start the application**:
+   ```bash
+   cd backend && go run cmd/main.go &
+   cd ../frontend && npm run dev
+   ```
+
+## Features
+
+- Multi-level user management (Admin/Reseller/User)
+- Domain and DNS management
+- Email management with spam protection
+- SSL certificate management (Let's Encrypt integration)
+- File manager and FTP accounts
+- Database management (MySQL, PostgreSQL, MongoDB)
+- Backup and restore functionality
+- Security features (2FA, brute force protection)
+- Real-time monitoring and statistics
+
+## Documentation
+
+See [docs/README.md](docs/README.md) for complete documentation.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.

@@ -14,8 +14,26 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd AdminiSoftware/backend && go run cmd/main.go"
+args = "cd AdminiSoftware/backend && go mod download && go run cmd/main.go"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd AdminiSoftware/frontend && npm run dev"
+args = "cd AdminiSoftware/frontend && npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Backend Server"
+author = 45370185
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd AdminiSoftware/backend && go mod download && go run cmd/main.go"
+
+[[workflows.workflow]]
+name = "Frontend Dev Server"
+author = 45370185
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd AdminiSoftware/frontend && npm install && npm run dev"
