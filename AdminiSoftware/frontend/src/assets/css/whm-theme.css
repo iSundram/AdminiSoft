@@ -1,0 +1,65 @@
+
+/* WHM-style theme colors and styling */
+.theme-whm {
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-light: #dbeafe;
+  --color-secondary: #374151;
+  --color-background: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-border: #d1d5db;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+}
+
+.theme-whm .navbar {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #1e40af 100%);
+  color: white;
+}
+
+.theme-whm .sidebar {
+  background: #1f2937;
+  border-right: 1px solid #374151;
+}
+
+.theme-whm .sidebar a {
+  color: #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.theme-whm .sidebar a:hover {
+  background: #374151;
+  color: white;
+}
+
+.theme-whm .card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.theme-whm .btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.theme-whm .btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.theme-whm .table {
+  border: 1px solid var(--color-border);
+}
+
+.theme-whm .table thead {
+  background: #f8fafc;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.theme-whm .stats-card {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, white 100%);
+  border-left: 4px solid var(--color-primary);
+}

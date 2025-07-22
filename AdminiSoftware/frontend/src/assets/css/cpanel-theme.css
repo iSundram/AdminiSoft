@@ -1,0 +1,84 @@
+
+/* cPanel-style theme colors and styling */
+.theme-cpanel {
+  --color-primary: #059669;
+  --color-primary-hover: #047857;
+  --color-primary-light: #d1fae5;
+  --color-secondary: #4b5563;
+  --color-background: #f0f9ff;
+  --color-surface: #ffffff;
+  --color-border: #e5e7eb;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-accent: #0ea5e9;
+}
+
+.theme-cpanel .navbar {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #047857 100%);
+  color: white;
+  border-bottom: 3px solid #065f46;
+}
+
+.theme-cpanel .sidebar {
+  background: #f8fafc;
+  border-right: 1px solid var(--color-border);
+}
+
+.theme-cpanel .sidebar a {
+  color: var(--color-text);
+  border-radius: 6px;
+  margin: 2px 0;
+}
+
+.theme-cpanel .sidebar a:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.theme-cpanel .sidebar a.router-link-active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.theme-cpanel .card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.theme-cpanel .btn-primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.theme-cpanel .btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(5, 150, 105, 0.3);
+}
+
+.theme-cpanel .stats-card {
+  background: linear-gradient(135deg, white 0%, var(--color-primary-light) 100%);
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+}
+
+.theme-cpanel .progress-bar {
+  background: linear-gradient(90deg, var(--color-primary) 0%, #10b981 100%);
+  border-radius: 4px;
+}
+
+.theme-cpanel .table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.theme-cpanel .table thead {
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, #a7f3d0 100%);
+}

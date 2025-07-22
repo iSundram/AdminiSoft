@@ -1,0 +1,390 @@
+AdminiSoftware/
+├── backend/
+│   ├── cmd/
+│   │   └── main.go
+│   ├── internal/
+│   │   ├── api/
+│   │   │   ├── routes.go
+│   │   │   ├── handlers/
+│   │   │   │   ├── auth.go
+│   │   │   │   ├── admin/
+│   │   │   │   │   ├── accounts.go
+│   │   │   │   │   ├── dns.go
+│   │   │   │   │   ├── ssl.go
+│   │   │   │   │   ├── backup.go
+│   │   │   │   │   ├── packages.go
+│   │   │   │   │   ├── security.go
+│   │   │   │   │   ├── email.go
+│   │   │   │   │   ├── server.go
+│   │   │   │   │   ├── clustering.go
+│   │   │   │   │   └── stats.go
+│   │   │   │   ├── reseller/
+│   │   │   │   │   ├── accounts.go
+│   │   │   │   │   ├── packages.go
+│   │   │   │   │   ├── stats.go
+│   │   │   │   │   └── branding.go
+│   │   │   │   └── user/
+│   │   │   │       ├── domains.go
+│   │   │   │       ├── files.go
+│   │   │   │       ├── databases.go
+│   │   │   │       ├── email.go
+│   │   │   │       ├── ssl.go
+│   │   │   │       ├── apps.go
+│   │   │   │       ├── wordpress.go
+│   │   │   │       └── stats.go
+│   │   │   └── middleware/
+│   │   │       ├── auth.go
+│   │   │       ├── rate_limit.go
+│   │   │       ├── logging.go
+│   │   │       └── cors.go
+│   │   ├── auth/
+│   │   │   ├── jwt.go
+│   │   │   ├── two_factor.go
+│   │   │   └── brute_force.go
+│   │   ├── models/
+│   │   │   ├── user.go
+│   │   │   ├── domain.go
+│   │   │   ├── database.go
+│   │   │   ├── email.go
+│   │   │   ├── ssl.go
+│   │   │   ├── package.go
+│   │   │   ├── backup.go
+│   │   │   ├── dns.go
+│   │   │   ├── stats.go
+│   │   │   └── system.go
+│   │   ├── services/
+│   │   │   ├── account_service.go
+│   │   │   ├── dns_service.go
+│   │   │   ├── ssl_service.go
+│   │   │   ├── backup_service.go
+│   │   │   ├── email_service.go
+│   │   │   ├── file_service.go
+│   │   │   ├── database_service.go
+│   │   │   ├── security_service.go
+│   │   │   ├── monitoring_service.go
+│   │   │   └── integration_service.go
+│   │   ├── config/
+│   │   │   ├── config.go
+│   │   │   ├── database.go
+│   │   │   └── redis.go
+│   │   └── utils/
+│   │       ├── hash.go
+│   │       ├── validator.go
+│   │       ├── logger.go
+│   │       └── helpers.go
+│   ├── pkg/
+│   │   ├── cpanel/
+│   │   │   ├── api.go
+│   │   │   └── importer.go
+│   │   ├── whm/
+│   │   │   ├── api.go
+│   │   │   └── manager.go
+│   │   ├── letsencrypt/
+│   │   │   └── client.go
+│   │   ├── cloudlinux/
+│   │   │   └── integration.go
+│   │   └── monitoring/
+│   │       ├── system.go
+│   │       └── alerts.go
+│   ├── scripts/
+│   │   ├── setup.sh
+│   │   ├── migrate.sh
+│   │   └── backup.sh
+│   ├── go.mod
+│   ├── go.sum
+│   └── Dockerfile
+├── frontend/
+│   ├── public/
+│   │   ├── index.html
+│   │   ├── favicon.ico
+│   │   └── assets/
+│   │       ├── logos/
+│   │       │   ├── adminisoftware-logo.svg
+│   │       │   ├── whm-style-logo.svg
+│   │       │   └── cpanel-style-logo.svg
+│   │       └── images/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── common/
+│   │   │   │   ├── Navbar.vue
+│   │   │   │   ├── Sidebar.vue
+│   │   │   │   ├── Footer.vue
+│   │   │   │   ├── Modal.vue
+│   │   │   │   ├── DataTable.vue
+│   │   │   │   ├── LoadingSpinner.vue
+│   │   │   │   ├── StatsCard.vue
+│   │   │   │   ├── Chart.vue
+│   │   │   │   └── SearchBar.vue
+│   │   │   ├── forms/
+│   │   │   │   ├── AccountForm.vue
+│   │   │   │   ├── DomainForm.vue
+│   │   │   │   ├── DatabaseForm.vue
+│   │   │   │   ├── EmailForm.vue
+│   │   │   │   ├── PackageForm.vue
+│   │   │   │   └── SSLForm.vue
+│   │   │   └── widgets/
+│   │   │       ├── SystemStatus.vue
+│   │   │       ├── ResourceUsage.vue
+│   │   │       ├── QuickActions.vue
+│   │   │       ├── RecentActivity.vue
+│   │   │       └── Notifications.vue
+│   │   ├── views/
+│   │   │   ├── Login.vue
+│   │   │   ├── AdminiCore/
+│   │   │   │   ├── Dashboard.vue
+│   │   │   │   ├── ServerConfiguration/
+│   │   │   │   │   ├── BasicSetup.vue
+│   │   │   │   │   ├── WebServers.vue
+│   │   │   │   │   ├── DatabaseServers.vue
+│   │   │   │   │   ├── PHPSelector.vue
+│   │   │   │   │   └── ServiceManager.vue
+│   │   │   │   ├── SecurityCenter/
+│   │   │   │   │   ├── Overview.vue
+│   │   │   │   │   ├── TwoFactorAuth.vue
+│   │   │   │   │   ├── BruteForceProtection.vue
+│   │   │   │   │   ├── ModSecurity.vue
+│   │   │   │   │   ├── CSF.vue
+│   │   │   │   │   ├── Imunify360.vue
+│   │   │   │   │   └── SecurityAudit.vue
+│   │   │   │   ├── AccountManagement/
+│   │   │   │   │   ├── ListAccounts.vue
+│   │   │   │   │   ├── CreateAccount.vue
+│   │   │   │   │   ├── ModifyAccount.vue
+│   │   │   │   │   ├── SuspendedAccounts.vue
+│   │   │   │   │   ├── OverQuotaAccounts.vue
+│   │   │   │   │   ├── BandwidthUsage.vue
+│   │   │   │   │   ├── PasswordManagement.vue
+│   │   │   │   │   └── MultiAccountOperations.vue
+│   │   │   │   ├── PackageManagement/
+│   │   │   │   │   ├── ListPackages.vue
+│   │   │   │   │   ├── CreatePackage.vue
+│   │   │   │   │   ├── EditPackage.vue
+│   │   │   │   │   ├── DeletePackage.vue
+│   │   │   │   │   └── FeatureManager.vue
+│   │   │   │   ├── DNSManagement/
+│   │   │   │   │   ├── DNSZoneManager.vue
+│   │   │   │   │   ├── AddDNSZone.vue
+│   │   │   │   │   ├── EditZoneTemplates.vue
+│   │   │   │   │   ├── EmailRouting.vue
+│   │   │   │   │   ├── ParkDomain.vue
+│   │   │   │   │   └── SetZoneTTL.vue
+│   │   │   │   ├── EmailManagement/
+│   │   │   │   │   ├── MailDeliveryReports.vue
+│   │   │   │   │   ├── ViewRelayers.vue
+│   │   │   │   │   ├── ViewSentSummary.vue
+│   │   │   │   │   ├── MailQueue.vue
+│   │   │   │   │   ├── SMTPRestrictions.vue
+│   │   │   │   │   └── SpamProtection.vue
+│   │   │   │   ├── SSLManagement/
+│   │   │   │   │   ├── GenerateSSL.vue
+│   │   │   │   │   ├── InstallSSL.vue
+│   │   │   │   │   ├── ManageSSLHosts.vue
+│   │   │   │   │   ├── PurchaseSSL.vue
+│   │   │   │   │   ├── SSLStorageManager.vue
+│   │   │   │   │   └── AutomaticSSL.vue
+│   │   │   │   ├── BackupManagement/
+│   │   │   │   │   ├── BackupConfiguration.vue
+│   │   │   │   │   ├── FileRestoration.vue
+│   │   │   │   │   ├── ScheduledBackups.vue
+│   │   │   │   │   ├── RemoteBackups.vue
+│   │   │   │   │   └── IncrementalBackups.vue
+│   │   │   │   ├── Clustering/
+│   │   │   │   │   ├── DNSClustering.vue
+│   │   │   │   │   ├── ClusterManagement.vue
+│   │   │   │   │   └── RemoteAccessKey.vue
+│   │   │   │   ├── Monitoring/
+│   │   │   │   │   ├── SystemStats.vue
+│   │   │   │   │   ├── LoadAverages.vue
+│   │   │   │   │   ├── ServiceMonitoring.vue
+│   │   │   │   │   ├── ResourceUsage.vue
+│   │   │   │   │   └── AlertsManagement.vue
+│   │   │   │   ├── Integrations/
+│   │   │   │   │   ├── CloudLinuxManager.vue
+│   │   │   │   │   ├── WPToolkit.vue
+│   │   │   │   │   ├── PluginManager.vue
+│   │   │   │   │   ├── APITokens.vue
+│   │   │   │   │   └── DeveloperTools.vue
+│   │   │   │   └── Customization/
+│   │   │   │       ├── Branding.vue
+│   │   │   │       ├── ThemeEditor.vue
+│   │   │   │       ├── WebTemplateEditor.vue
+│   │   │   │       └── LogoCustomization.vue
+│   │   │   ├── AdminiReseller/
+│   │   │   │   ├── Dashboard.vue
+│   │   │   │   ├── AccountManagement/
+│   │   │   │   │   ├── CreateAccount.vue
+│   │   │   │   │   ├── ListAccounts.vue
+│   │   │   │   │   ├── ModifyAccount.vue
+│   │   │   │   │   └── AccountStatistics.vue
+│   │   │   │   ├── PackageManagement/
+│   │   │   │   │   ├── CreatePackage.vue
+│   │   │   │   │   ├── ListPackages.vue
+│   │   │   │   │   └── EditPackage.vue
+│   │   │   │   ├── ResourceManagement/
+│   │   │   │   │   ├── IPAssignment.vue
+│   │   │   │   │   ├── ResourceAllocation.vue
+│   │   │   │   │   └── UsageMonitoring.vue
+│   │   │   │   ├── Communication/
+│   │   │   │   │   ├── MessageAllUsers.vue
+│   │   │   │   │   ├── Announcements.vue
+│   │   │   │   │   └── SupportTickets.vue
+│   │   │   │   ├── Branding/
+│   │   │   │   │   ├── LogoCustomization.vue
+│   │   │   │   │   ├── ThemeSelection.vue
+│   │   │   │   │   └── CustomLinks.vue
+│   │   │   │   └── Tools/
+│   │   │   │       ├── Terminal.vue
+│   │   │   │       ├── SystemInfo.vue
+│   │   │   │       └── APIAccess.vue
+│   │   │   └── AdminiPanel/
+│   │   │       ├── Dashboard.vue
+│   │   │       ├── DomainManagement/
+│   │   │       │   ├── Subdomains.vue
+│   │   │       │   ├── DomainPointers.vue
+│   │   │       │   ├── SiteRedirection.vue
+│   │   │       │   ├── DNSZoneEditor.vue
+│   │   │       │   └── ErrorPages.vue
+│   │   │       ├── FileManagement/
+│   │   │       │   ├── FileManager.vue
+│   │   │       │   ├── FTPAccounts.vue
+│   │   │       │   ├── FTPConnections.vue
+│   │   │       │   ├── DiskUsage.vue
+│   │   │       │   ├── DirectoryPrivacy.vue
+│   │   │       │   └── WebDisk.vue
+│   │   │       ├── EmailManagement/
+│   │   │       │   ├── EmailAccounts.vue
+│   │   │       │   ├── Forwarders.vue
+│   │   │       │   ├── Autoresponders.vue
+│   │   │       │   ├── DefaultAddress.vue
+│   │   │       │   ├── MailingLists.vue
+│   │   │       │   ├── EmailFilters.vue
+│   │   │       │   ├── SpamAssassin.vue
+│   │   │       │   ├── Boxtrapper.vue
+│   │   │       │   ├── EmailRouting.vue
+│   │   │       │   ├── MXEntry.vue
+│   │   │       │   ├── EmailDiskUsage.vue
+│   │   │       │   ├── Webmail.vue
+│   │   │       │   └── TrackDelivery.vue
+│   │   │       ├── DatabaseManagement/
+│   │   │       │   ├── MySQLDatabases.vue
+│   │   │       │   ├── PostgreSQLDatabases.vue
+│   │   │       │   ├── MongoDBDatabases.vue
+│   │   │       │   ├── DatabaseWizard.vue
+│   │   │       │   ├── phpMyAdmin.vue
+│   │   │       │   ├── phpPgAdmin.vue
+│   │   │       │   └── RemoteDatabaseAccess.vue
+│   │   │       ├── ApplicationManagement/
+│   │   │       │   ├── Softaculous.vue
+│   │   │       │   ├── WordPressManager.vue
+│   │   │       │   ├── NodeJSApps.vue
+│   │   │       │   ├── PythonApps.vue
+│   │   │       │   ├── RubyApps.vue
+│   │   │       │   ├── MultiPHPManager.vue
+│   │   │       │   ├── SiteJetBuilder.vue
+│   │   │       │   └── AppInstaller.vue
+│   │   │       ├── SSLManagement/
+│   │   │       │   ├── SSLCertificates.vue
+│   │   │       │   ├── AutoSSL.vue
+│   │   │       │   ├── LetsEncrypt.vue
+│   │   │       │   └── SSLInstaller.vue
+│   │   │       ├── SecurityTools/
+│   │   │       │   ├── TwoFactorAuth.vue
+│   │   │       │   ├── IPDeny.vue
+│   │   │       │   ├── HotlinkProtection.vue
+│   │   │       │   ├── LeechProtection.vue
+│   │   │       │   ├── PasswordProtect.vue
+│   │   │       │   ├── ModSecurity.vue
+│   │   │       │   └── LoginHistory.vue
+│   │   │       ├── Backup/
+│   │   │       │   ├── BackupWizard.vue
+│   │   │       │   ├── BackupDownload.vue
+│   │   │       │   ├── BackupRestore.vue
+│   │   │       │   ├── PartialBackups.vue
+│   │   │       │   └── RemoteBackups.vue
+│   │   │       ├── Statistics/
+│   │   │       │   ├── AWStats.vue
+│   │   │       │   ├── Webalizer.vue
+│   │   │       │   ├── BandwidthUsage.vue
+│   │   │       │   ├── LatestVisitors.vue
+│   │   │       │   ├── ErrorLogs.vue
+│   │   │       │   ├── AccessLogs.vue
+│   │   │       │   ├── CPUUsage.vue
+│   │   │       │   └── ResourceUsage.vue
+│   │   │       ├── AdvancedTools/
+│   │   │       │   ├── CronJobs.vue
+│   │   │       │   ├── MIMETypes.vue
+│   │   │       │   ├── ApacheHandlers.vue
+│   │   │       │   ├── IndexManager.vue
+│   │   │       │   ├── CloudFlare.vue
+│   │   │       │   ├── Terminal.vue
+│   │   │       │   ├── SitePublisher.vue
+│   │   │       │   └── APIShell.vue
+│   │   │       └── Preferences/
+│   │   │           ├── ChangePassword.vue
+│   │   │           ├── ContactInfo.vue
+│   │   │           ├── UserPreferences.vue
+│   │   │           ├── LanguageSelection.vue
+│   │   │           └── StyleSettings.vue
+│   │   ├── router/
+│   │   │   └── index.js
+│   │   ├── store/
+│   │   │   ├── index.js
+│   │   │   ├── auth.js
+│   │   │   ├── admin.js
+│   │   │   ├── reseller.js
+│   │   │   ├── user.js
+│   │   │   └── system.js
+│   │   ├── services/
+│   │   │   ├── api.js
+│   │   │   ├── auth.js
+│   │   │   ├── admin.js
+│   │   │   ├── reseller.js
+│   │   │   ├── user.js
+│   │   │   └── websocket.js
+│   │   ├── composables/
+│   │   │   ├── useAuth.js
+│   │   │   ├── useApi.js
+│   │   │   ├── useNotifications.js
+│   │   │   ├── useWebSocket.js
+│   │   │   └── useTheme.js
+│   │   ├── assets/
+│   │   │   ├── css/
+│   │   │   │   ├── main.css
+│   │   │   │   ├── whm-theme.css
+│   │   │   │   ├── cpanel-theme.css
+│   │   │   │   └── custom-themes.css
+│   │   │   ├── js/
+│   │   │   │   ├── utils.js
+│   │   │   │   └── constants.js
+│   │   │   └── icons/
+│   │   ├── App.vue
+│   │   └── main.js
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   ├── postcss.config.js
+│   └── Dockerfile
+├── docs/
+│   ├── README.md
+│   ├── installation.md
+│   ├── configuration.md
+│   ├── api-documentation.md
+│   ├── user-guide.md
+│   ├── admin-guide.md
+│   ├── troubleshooting.md
+│   └── changelog.md
+├── docker/
+│   ├── docker-compose.yml
+│   ├── nginx.conf
+│   ├── redis.conf
+│   └── postgres.sql
+├── scripts/
+│   ├── install.sh
+│   ├── update.sh
+│   ├── backup.sh
+│   ├── restore.sh
+│   └── migration.sh
+├── .env.example
+├── .gitignore
+├── LICENSE
+└── README.md
