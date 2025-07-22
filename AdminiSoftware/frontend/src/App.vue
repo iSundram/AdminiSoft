@@ -91,3 +91,139 @@ export default {
   background: #a8a8a8;
 }
 </style>
+<template>
+  <div id="app" :class="currentTheme">
+    <router-view />
+    <Teleport to="body">
+      <div id="modal-root"></div>
+    </Teleport>
+  </div>
+</template>
+
+<script>
+import { computed, onMounted } from 'vue'
+import { useAuthStore } from '@/store/auth'
+import { useTheme } from '@/composables/useTheme'
+
+export default {
+  name: 'App',
+  setup() {
+    const authStore = useAuthStore()
+    const { currentTheme, initTheme } = useTheme()
+
+    onMounted(() => {
+      // Initialize authentication state
+      authStore.initializeAuth()
+      
+      // Initialize theme
+      initTheme()
+      
+      // Set up global error handling
+      window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason)
+        // You can add toast notification here
+      })
+    })
+
+    return {
+      currentTheme: computed(() => `theme-${currentTheme.value}`)
+    }
+  }
+}
+</script>
+
+<style>
+/* Global styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100vh;
+  background-color: var(--bg-color, #f8fafc);
+  transition: background-color 0.3s ease;
+}
+
+/* Theme transitions */
+.theme-default {
+  --bg-color: #f8fafc;
+  --text-color: #1e293b;
+  --primary-color: #3b82f6;
+}
+
+.theme-cpanel {
+  --bg-color: #f0f9ff;
+  --text-color: #1e293b;
+  --primary-color: #059669;
+}
+
+.theme-whm {
+  --bg-color: #f8fafc;
+  --text-color: #334155;
+  --primary-color: #64748b;
+}
+
+.theme-dark {
+  --bg-color: #0f172a;
+  --text-color: #f1f5f9;
+  --primary-color: #60a5fa;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Loading overlay custom styles */
+.vld-overlay {
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.vld-spinner {
+  border-color: var(--primary-color, #3b82f6) !important;
+}
+
+/* Toast notification custom styles */
+.Vue-Toastification__toast {
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+.Vue-Toastification__toast--success {
+  background-color: #10b981 !important;
+}
+
+.Vue-Toastification__toast--error {
+  background-color: #ef4444 !important;
+}
+
+.Vue-Toastification__toast--warning {
+  background-color: #f59e0b !important;
+}
+
+.Vue-Toastification__toast--info {
+  background-color: #3b82f6 !important;
+}
+</style>

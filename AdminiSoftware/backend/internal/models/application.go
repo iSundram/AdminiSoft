@@ -122,3 +122,54 @@ func (w *WordPressSite) BeforeCreate(tx *gorm.DB) (err error) {
 	}
 	return
 }
+package models
+
+import (
+	"time"
+	"gorm.io/gorm"
+)
+
+type Application struct {
+	ID          uint           `json:"id" gorm:"primarykey"`
+	UserID      uint           `json:"user_id"`
+	User        User           `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	DomainID    uint           `json:"domain_id"`
+	Domain      Domain         `json:"domain,omitempty" gorm:"foreignKey:DomainID"`
+	Name        string         `json:"name" gorm:"size:255"`
+	Type        string         `json:"type" gorm:"size:50"` // wordpress, drupal, nodejs, python, etc.
+	Version     string         `json:"version" gorm:"size:50"`
+	Path        string         `json:"path" gorm:"size:500"`
+	URL         string         `json:"url" gorm:"size:500"`
+	Status      string         `json:"status" gorm:"size:20;default:active"`
+	Config      string         `json:"config" gorm:"type:text"`
+	Variables   []AppVariable  `json:"variables,omitempty" gorm:"foreignKey:ApplicationID"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
+type AppVariable struct {
+	ID            uint           `json:"id" gorm:"primarykey"`
+	ApplicationID uint           `json:"application_id"`
+	Application   Application    `json:"application,omitempty" gorm:"foreignKey:ApplicationID"`
+	Key           string         `json:"key" gorm:"size:255"`
+	Value         string         `json:"value" gorm:"type:text"`
+	IsSecret      bool           `json:"is_secret" gorm:"default:false"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
+type WordPressInstall struct {
+	ID            uint           `json:"id" gorm:"primarykey"`
+	ApplicationID uint           `json:"application_id"`
+	Application   Application    `json:"application,omitempty" gorm:"foreignKey:ApplicationID"`
+	AdminUser     string         `json:"admin_user" gorm:"size:255"`
+	AdminEmail    string         `json:"admin_email" gorm:"size:255"`
+	SiteTitle    string         `json:"site_title" gorm:"size:255"`
+	Plugins       string         `json:"plugins" gorm:"type:text"`
+	Themes        string         `json:"themes" gorm:"type:text"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	DeletedAt     gorm.DeletedAt `json:"-" gorm:"index"`
+}

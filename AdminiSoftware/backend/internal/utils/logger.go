@@ -101,3 +101,57 @@ func (l *Logger) LogError(err error, context string) {
 func (l *Logger) LogSecurityEvent(event, ip, details string) {
 	l.warningLogger.Printf("Security Event - %s from %s: %s", event, ip, details)
 }
+package utils
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+)
+
+type Logger struct {
+	infoLogger  *log.Logger
+	errorLogger *log.Logger
+	debugLogger *log.Logger
+}
+
+func NewLogger() *Logger {
+	return &Logger{
+		infoLogger:  log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile),
+		errorLogger: log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile),
+		debugLogger: log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile),
+	}
+}
+
+func (l *Logger) Info(msg string) {
+	l.infoLogger.Println(msg)
+}
+
+func (l *Logger) Error(msg string) {
+	l.errorLogger.Println(msg)
+}
+
+func (l *Logger) Debug(msg string) {
+	l.debugLogger.Println(msg)
+}
+
+func (l *Logger) Infof(format string, v ...interface{}) {
+	l.infoLogger.Printf(format, v...)
+}
+
+func (l *Logger) Errorf(format string, v ...interface{}) {
+	l.errorLogger.Printf(format, v...)
+}
+
+func (l *Logger) Debugf(format string, v ...interface{}) {
+	l.debugLogger.Printf(format, v...)
+}
+
+func (l *Logger) LogRequest(method, path, ip string, duration time.Duration) {
+	l.infof("%s %s from %s took %v", method, path, ip, duration)
+}
+
+func (l *Logger) infof(format string, v ...interface{}) {
+	l.infoLogger.Printf(format, v...)
+}

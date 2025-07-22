@@ -189,3 +189,193 @@ export const useAuthStore = defineStore('auth', () => {
     clearError
   }
 })
+import { defineStore } from 'pinia'
+import { authService } from '@/services/auth'
+
+export const useAuthStore = defineStore('auth', {
+  state: () => ({
+    user: null,
+    token: localStorage.getItem('token'),
+    isLoading: false,
+    loginAttempts: 0,
+    requires2FA: false,
+    tempToken: null,
+  }),
+
+  getters: {
+    isAuthenticated: (state) => !!state.token && !!state.user,
+    userRole: (state) => state.user?.role || null,
+    isAdmin: (state) => state.user?.role === 'admin',
+    isReseller: (state) => state.user?.role === 'reseller',
+    isUser: (state) => state.user?.role === 'user',
+    userName: (state) => state.user ? `${state.user.first_name} ${state.user.last_name}` : '',
+  },
+
+  actions: {
+    async login(credentials) {
+      this.isLoading = true
+      try {
+        const response = await authService.login(credentials)
+        
+        if (response.requires_2fa) {
+          this.requires2FA = true
+          this.tempToken = response.temp_token
+          return { requires2FA: true }
+        }
+        
+        this.setAuthData(response.token, response.user)
+        this.loginAttempts = 0
+        this.requires2FA = false
+        this.tempToken = null
+        
+        return { success: true }
+      } catch (error) {
+        this.loginAttempts++
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async verify2FA(code) {
+      this.isLoading = true
+      try {
+        const response = await authService.verify2FA({
+          code,
+          temp_token: this.tempToken
+        })
+        
+        this.setAuthData(response.token, response.user)
+        this.requires2FA = false
+        this.tempToken = null
+        
+        return { success: true }
+      } catch (error) {
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async register(userData) {
+      this.isLoading = true
+      try {
+        const response = await authService.register(userData)
+        this.setAuthData(response.token, response.user)
+        return { success: true }
+      } catch (error) {
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    async logout() {
+      this.clearAuthData()
+      // Optionally call logout endpoint
+      try {
+        await authService.logout()
+      } catch (error) {
+        console.error('Logout error:', error)
+      }
+    },
+
+    async refreshToken() {
+      if (!this.token) return false
+      
+      try {
+        const response = await authService.refreshToken()
+        this.setAuthData(response.token, response.user)
+        return true
+      } catch (error) {
+        this.clearAuthData()
+        return false
+      }
+    },
+
+    async fetchProfile() {
+      if (!this.isAuthenticated) return
+      
+      try {
+        const response = await authService.getProfile()
+        this.user = response.user
+      } catch (error) {
+        console.error('Failed to fetch profile:', error)
+        if (error.response?.status === 401) {
+          this.clearAuthData()
+        }
+      }
+    },
+
+    async updateProfile(profileData) {
+      try {
+        const response = await authService.updateProfile(profileData)
+        this.user = { ...this.user, ...response.user }
+        return { success: true }
+      } catch (error) {
+        throw error
+      }
+    },
+
+    async changePassword(passwordData) {
+      try {
+        await authService.changePassword(passwordData)
+        return { success: true }
+      } catch (error) {
+        throw error
+      }
+    },
+
+    async enable2FA() {
+      try {
+        const response = await authService.enable2FA()
+        return response
+      } catch (error) {
+        throw error
+      }
+    },
+
+    async disable2FA(code) {
+      try {
+        await authService.disable2FA({ code })
+        this.user.two_factor_enabled = false
+        return { success: true }
+      } catch (error) {
+        throw error
+      }
+    },
+
+    setAuthData(token, user) {
+      this.token = token
+      this.user = user
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
+    },
+
+    clearAuthData() {
+      this.token = null
+      this.user = null
+      this.requires2FA = false
+      this.tempToken = null
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    },
+
+    initializeAuth() {
+      const token = localStorage.getItem('token')
+      const user = localStorage.getItem('user')
+      
+      if (token && user) {
+        try {
+          this.token = token
+          this.user = JSON.parse(user)
+          // Fetch fresh profile data
+          this.fetchProfile()
+        } catch (error) {
+          console.error('Error initializing auth:', error)
+          this.clearAuthData()
+        }
+      }
+    },
+  },
+})

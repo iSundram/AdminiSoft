@@ -243,3 +243,90 @@ func TimeAgo(t time.Time) string {
 		return t.Format("Jan 2, 2006")
 	}
 }
+package utils
+
+import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+)
+
+func GenerateRandomString(length int) string {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(bytes)[:length]
+}
+
+func FormatBytes(bytes int64) string {
+	const unit = 1024
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	div, exp := int64(unit), 0
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func FormatDuration(d time.Duration) string {
+	if d < time.Minute {
+		return fmt.Sprintf("%.0fs", d.Seconds())
+	}
+	if d < time.Hour {
+		return fmt.Sprintf("%.0fm", d.Minutes())
+	}
+	if d < 24*time.Hour {
+		return fmt.Sprintf("%.1fh", d.Hours())
+	}
+	return fmt.Sprintf("%.1fd", d.Hours()/24)
+}
+
+func StringToInt(s string) int {
+	i, _ := strconv.Atoi(s)
+	return i
+}
+
+func IntToString(i int) string {
+	return strconv.Itoa(i)
+}
+
+func Contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
+func TruncateString(s string, length int) string {
+	if len(s) <= length {
+		return s
+	}
+	return s[:length] + "..."
+}
+
+func SlugifyString(s string) string {
+	s = strings.ToLower(s)
+	s = strings.ReplaceAll(s, " ", "-")
+	s = strings.ReplaceAll(s, "_", "-")
+	return s
+}
+
+func GetClientIP(remoteAddr, xForwardedFor, xRealIP string) string {
+	if xRealIP != "" {
+		return xRealIP
+	}
+	if xForwardedFor != "" {
+		ips := strings.Split(xForwardedFor, ",")
+		return strings.TrimSpace(ips[0])
+	}
+	return strings.Split(remoteAddr, ":")[0]
+}

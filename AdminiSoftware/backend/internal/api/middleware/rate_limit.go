@@ -102,3 +102,86 @@ func APIRateLimit() gin.HandlerFunc {
 func GeneralRateLimit() gin.HandlerFunc {
 	return RateLimit(100) // 100 requests per minute for general endpoints
 }
+package middleware
+
+import (
+	"AdminiSoftware/internal/utils"
+	"context"
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+)
+
+type RateLimiter struct {
+	redis   *redis.Client
+	enabled bool
+}
+
+func NewRateLimiter(redis *redis.Client) *RateLimiter {
+	return &RateLimiter{
+		redis:   redis,
+		enabled: redis != nil,
+	}
+}
+
+func (rl *RateLimiter) Middleware(requests int, window time.Duration) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if !rl.enabled {
+			c.Next()
+			return
+		}
+
+		ip := utils.GetClientIP(c.Request.RemoteAddr, c.GetHeader("X-Forwarded-For"), c.GetHeader("X-Real-IP"))
+		key := fmt.Sprintf("rate_limit:%s", ip)
+
+		ctx := context.Background()
+		current, err := rl.redis.Get(ctx, key).Int()
+		if err != nil && err != redis.Nil {
+			c.Next()
+			return
+		}
+
+		if current >= requests {
+			c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
+			c.Header("X-RateLimit-Remaining", "0")
+			c.Header("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(window).Unix(), 10))
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error": "Rate limit exceeded",
+			})
+			c.Abort()
+			return
+		}
+
+		pipe := rl.redis.Pipeline()
+		pipe.Incr(ctx, key)
+		pipe.Expire(ctx, key, window)
+		pipe.Exec(ctx)
+
+		remaining := requests - current - 1
+		if remaining < 0 {
+			remaining = 0
+		}
+
+		c.Header("X-RateLimit-Limit", strconv.Itoa(requests))
+		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+		c.Header("X-RateLimit-Reset", strconv.FormatInt(time.Now().Add(window).Unix(), 10))
+
+		c.Next()
+	}
+}
+
+func (rl *RateLimiter) AuthRateLimit() gin.HandlerFunc {
+	return rl.Middleware(5, 15*time.Minute) // 5 requests per 15 minutes for auth endpoints
+}
+
+func (rl *RateLimiter) APIRateLimit() gin.HandlerFunc {
+	return rl.Middleware(100, time.Hour) // 100 requests per hour for general API
+}
+
+func (rl *RateLimiter) UploadRateLimit() gin.HandlerFunc {
+	return rl.Middleware(10, time.Hour) // 10 uploads per hour
+}

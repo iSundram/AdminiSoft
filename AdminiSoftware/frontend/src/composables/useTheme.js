@@ -118,3 +118,91 @@ export function useTheme() {
     autoSetThemeForPanel
   }
 }
+import { ref, computed, watch } from 'vue'
+
+const theme = ref(localStorage.getItem('theme') || 'default')
+
+export function useTheme() {
+  const currentTheme = computed(() => theme.value)
+  
+  const themes = [
+    { value: 'default', name: 'Default', description: 'Clean and modern interface' },
+    { value: 'cpanel', name: 'cPanel Style', description: 'Traditional cPanel look and feel' },
+    { value: 'whm', name: 'WHM Style', description: 'Professional WHM-inspired design' },
+    { value: 'dark', name: 'Dark Mode', description: 'Dark theme for low-light environments' },
+  ]
+
+  const setTheme = (newTheme) => {
+    theme.value = newTheme
+    localStorage.setItem('theme', newTheme)
+    applyTheme(newTheme)
+  }
+
+  const applyTheme = (themeName) => {
+    // Remove existing theme classes
+    const body = document.body
+    themes.forEach(t => {
+      body.classList.remove(`theme-${t.value}`)
+    })
+    
+    // Add new theme class
+    body.classList.add(`theme-${themeName}`)
+    
+    // Update meta theme-color for mobile browsers
+    updateMetaThemeColor(themeName)
+  }
+
+  const updateMetaThemeColor = (themeName) => {
+    const themeColors = {
+      default: '#3b82f6',
+      cpanel: '#059669',
+      whm: '#64748b',
+      dark: '#1e293b',
+    }
+    
+    let metaThemeColor = document.querySelector('meta[name=theme-color]')
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta')
+      metaThemeColor.setAttribute('name', 'theme-color')
+      document.head.appendChild(metaThemeColor)
+    }
+    
+    metaThemeColor.setAttribute('content', themeColors[themeName] || themeColors.default)
+  }
+
+  const initTheme = () => {
+    applyTheme(theme.value)
+  }
+
+  const toggleDarkMode = () => {
+    const newTheme = theme.value === 'dark' ? 'default' : 'dark'
+    setTheme(newTheme)
+  }
+
+  const isDarkMode = computed(() => theme.value === 'dark')
+
+  // Watch for system theme changes
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const handleSystemThemeChange = (e) => {
+    if (!localStorage.getItem('theme')) {
+      setTheme(e.matches ? 'dark' : 'default')
+    }
+  }
+
+  mediaQuery.addEventListener('change', handleSystemThemeChange)
+
+  // Initialize with system preference if no saved theme
+  if (!localStorage.getItem('theme')) {
+    const systemTheme = mediaQuery.matches ? 'dark' : 'default'
+    setTheme(systemTheme)
+  }
+
+  return {
+    currentTheme,
+    themes,
+    setTheme,
+    initTheme,
+    toggleDarkMode,
+    isDarkMode,
+  }
+}

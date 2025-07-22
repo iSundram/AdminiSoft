@@ -37,3 +37,37 @@ type Subdomain struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+package models
+
+import (
+	"time"
+	"gorm.io/gorm"
+)
+
+type Domain struct {
+	ID           uint           `json:"id" gorm:"primarykey"`
+	UserID       uint           `json:"user_id"`
+	User         User           `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Name         string         `json:"name" gorm:"uniqueIndex;size:255"`
+	Type         string         `json:"type" gorm:"size:20"` // primary, addon, subdomain, parked
+	Status       string         `json:"status" gorm:"size:20;default:active"`
+	DocumentRoot string         `json:"document_root" gorm:"size:500"`
+	Redirects    []DomainRedirect `json:"redirects,omitempty" gorm:"foreignKey:DomainID"`
+	DNSRecords   []DNS          `json:"dns_records,omitempty" gorm:"foreignKey:DomainID"`
+	SSLEnabled   bool           `json:"ssl_enabled" gorm:"default:false"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `json:"-" gorm:"index"`
+}
+
+type DomainRedirect struct {
+	ID        uint           `json:"id" gorm:"primarykey"`
+	DomainID  uint           `json:"domain_id"`
+	Domain    Domain         `json:"domain,omitempty" gorm:"foreignKey:DomainID"`
+	Source    string         `json:"source" gorm:"size:255"`
+	Target    string         `json:"target" gorm:"size:500"`
+	Type      string         `json:"type" gorm:"size:20;default:301"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"-" gorm:"index"`
+}

@@ -36,3 +36,45 @@
     "prettier": "^3.1.1"
   }
 }
+{
+  "name": "adminisoftware-frontend",
+  "version": "1.0.0",
+  "description": "AdminiSoftware Control Panel Frontend",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "pinia": "^2.1.6",
+    "axios": "^1.5.0",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vue3-loading-overlay": "^0.0.0",
+    "chart.js": "^4.3.0",
+    "vue-chartjs": "^5.2.0",
+    "socket.io-client": "^4.7.2",
+    "@headlessui/vue": "^1.7.14",
+    "@heroicons/vue": "^2.0.18",
+    "date-fns": "^2.30.0",
+    "vue-draggable-next": "^2.2.1",
+    "prismjs": "^1.29.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.3.4",
+    "vite": "^4.4.9",
+    "tailwindcss": "^3.3.3",
+    "autoprefixer": "^10.4.15",
+    "postcss": "^8.4.29",
+    "eslint": "^8.47.0",
+    "eslint-plugin-vue": "^9.17.0",
+    "prettier": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

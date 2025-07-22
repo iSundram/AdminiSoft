@@ -129,3 +129,89 @@ func AdminOnlyMiddleware() gin.HandlerFunc {
 func ResellerOrAdminMiddleware() gin.HandlerFunc {
 	return RoleMiddleware("admin", "reseller")
 }
+package middleware
+
+import (
+	"AdminiSoftware/internal/auth"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+func AuthMiddleware(jwtManager *auth.JWTManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			c.Abort()
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Bearer token required"})
+			c.Abort()
+			return
+		}
+
+		claims, err := jwtManager.ValidateToken(tokenString)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		c.Set("user_id", claims.UserID)
+		c.Set("username", claims.Username)
+		c.Set("role", claims.Role)
+		c.Next()
+	}
+}
+
+func RequireRole(roles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userRole, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+			c.Abort()
+			return
+		}
+
+		roleStr := userRole.(string)
+		for _, role := range roles {
+			if roleStr == role {
+				c.Next()
+				return
+			}
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		c.Abort()
+	}
+}
+
+func OptionalAuth(jwtManager *auth.JWTManager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			c.Next()
+			return
+		}
+
+		claims, err := jwtManager.ValidateToken(tokenString)
+		if err == nil {
+			c.Set("user_id", claims.UserID)
+			c.Set("username", claims.Username)
+			c.Set("role", claims.Role)
+		}
+
+		c.Next()
+	}
+}

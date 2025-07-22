@@ -85,3 +85,106 @@ func (bfp *BruteForceProtection) GetClientIP(remoteAddr string) string {
 	}
 	return ip
 }
+package auth
+
+import (
+	"context"
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/go-redis/redis/v8"
+)
+
+type BruteForceProtection struct {
+	redis   *redis.Client
+	enabled bool
+}
+
+func NewBruteForceProtection(redis *redis.Client) *BruteForceProtection {
+	return &BruteForceProtection{
+		redis:   redis,
+		enabled: redis != nil,
+	}
+}
+
+func (bf *BruteForceProtection) IsBlocked(ip string) bool {
+	if !bf.enabled {
+		return false
+	}
+
+	ctx := context.Background()
+	key := fmt.Sprintf("bf:ip:%s", ip)
+	
+	attempts, err := bf.redis.Get(ctx, key).Int()
+	if err != nil {
+		return false
+	}
+
+	return attempts >= 5
+}
+
+func (bf *BruteForceProtection) RecordAttempt(ip string, success bool) error {
+	if !bf.enabled {
+		return nil
+	}
+
+	ctx := context.Background()
+	key := fmt.Sprintf("bf:ip:%s", ip)
+
+	if success {
+		// Clear failed attempts on successful login
+		return bf.redis.Del(ctx, key).Err()
+	}
+
+	// Increment failed attempts
+	pipe := bf.redis.Pipeline()
+	pipe.Incr(ctx, key)
+	pipe.Expire(ctx, key, 15*time.Minute)
+	_, err := pipe.Exec(ctx)
+
+	return err
+}
+
+func (bf *BruteForceProtection) GetAttempts(ip string) int {
+	if !bf.enabled {
+		return 0
+	}
+
+	ctx := context.Background()
+	key := fmt.Sprintf("bf:ip:%s", ip)
+	
+	attempts, err := bf.redis.Get(ctx, key).Int()
+	if err != nil {
+		return 0
+	}
+
+	return attempts
+}
+
+func (bf *BruteForceProtection) GetTimeUntilUnblock(ip string) time.Duration {
+	if !bf.enabled {
+		return 0
+	}
+
+	ctx := context.Background()
+	key := fmt.Sprintf("bf:ip:%s", ip)
+	
+	ttl, err := bf.redis.TTL(ctx, key).Result()
+	if err != nil {
+		return 0
+	}
+
+	return ttl
+}
+
+func (bf *BruteForceProtection) UnblockIP(ip string) error {
+	if !bf.enabled {
+		return nil
+	}
+
+	ctx := context.Background()
+	key := fmt.Sprintf("bf:ip:%s", ip)
+	
+	return bf.redis.Del(ctx, key).Err()
+}

@@ -131,3 +131,169 @@ export function useAuth() {
     verifyTwoFactor
   }
 }
+import { computed } from 'vue'
+import { useAuthStore } from '@/store/auth'
+import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
+
+export function useAuth() {
+  const authStore = useAuthStore()
+  const router = useRouter()
+  const toast = useToast()
+
+  const user = computed(() => authStore.user)
+  const isAuthenticated = computed(() => authStore.isAuthenticated)
+  const isLoading = computed(() => authStore.isLoading)
+  const userRole = computed(() => authStore.userRole)
+  const isAdmin = computed(() => authStore.isAdmin)
+  const isReseller = computed(() => authStore.isReseller)
+  const isUser = computed(() => authStore.isUser)
+
+  const login = async (credentials) => {
+    try {
+      const result = await authStore.login(credentials)
+      
+      if (result.requires2FA) {
+        return result
+      }
+      
+      toast.success('Login successful!')
+      
+      // Redirect based on role
+      const redirectPath = getRedirectPath(authStore.userRole)
+      router.push(redirectPath)
+      
+      return result
+    } catch (error) {
+      toast.error(error.message || 'Login failed')
+      throw error
+    }
+  }
+
+  const verify2FA = async (code) => {
+    try {
+      await authStore.verify2FA(code)
+      toast.success('Two-factor authentication successful!')
+      
+      const redirectPath = getRedirectPath(authStore.userRole)
+      router.push(redirectPath)
+    } catch (error) {
+      toast.error(error.message || '2FA verification failed')
+      throw error
+    }
+  }
+
+  const register = async (userData) => {
+    try {
+      await authStore.register(userData)
+      toast.success('Registration successful!')
+      router.push('/dashboard')
+    } catch (error) {
+      toast.error(error.message || 'Registration failed')
+      throw error
+    }
+  }
+
+  const logout = async () => {
+    try {
+      await authStore.logout()
+      toast.success('Logged out successfully')
+      router.push('/login')
+    } catch (error) {
+      console.error('Logout error:', error)
+      router.push('/login')
+    }
+  }
+
+  const updateProfile = async (profileData) => {
+    try {
+      await authStore.updateProfile(profileData)
+      toast.success('Profile updated successfully!')
+    } catch (error) {
+      toast.error(error.message || 'Failed to update profile')
+      throw error
+    }
+  }
+
+  const changePassword = async (passwordData) => {
+    try {
+      await authStore.changePassword(passwordData)
+      toast.success('Password changed successfully!')
+    } catch (error) {
+      toast.error(error.message || 'Failed to change password')
+      throw error
+    }
+  }
+
+  const enable2FA = async () => {
+    try {
+      const result = await authStore.enable2FA()
+      toast.success('Two-factor authentication enabled!')
+      return result
+    } catch (error) {
+      toast.error(error.message || 'Failed to enable 2FA')
+      throw error
+    }
+  }
+
+  const disable2FA = async (code) => {
+    try {
+      await authStore.disable2FA(code)
+      toast.success('Two-factor authentication disabled!')
+    } catch (error) {
+      toast.error(error.message || 'Failed to disable 2FA')
+      throw error
+    }
+  }
+
+  const hasRole = (role) => {
+    if (Array.isArray(role)) {
+      return role.includes(userRole.value)
+    }
+    return userRole.value === role
+  }
+
+  const hasPermission = (permission) => {
+    // Define permission mappings
+    const permissions = {
+      'admin': ['manage_accounts', 'manage_packages', 'manage_system', 'view_all'],
+      'reseller': ['manage_accounts', 'manage_packages', 'view_reseller'],
+      'user': ['manage_own_account', 'view_user']
+    }
+    
+    const userPermissions = permissions[userRole.value] || []
+    return userPermissions.includes(permission)
+  }
+
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case 'admin':
+        return '/admin/dashboard'
+      case 'reseller':
+        return '/reseller/dashboard'
+      case 'user':
+      default:
+        return '/dashboard'
+    }
+  }
+
+  return {
+    user,
+    isAuthenticated,
+    isLoading,
+    userRole,
+    isAdmin,
+    isReseller,
+    isUser,
+    login,
+    verify2FA,
+    register,
+    logout,
+    updateProfile,
+    changePassword,
+    enable2FA,
+    disable2FA,
+    hasRole,
+    hasPermission,
+  }
+}

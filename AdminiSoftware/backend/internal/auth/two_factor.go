@@ -87,3 +87,64 @@ func (tfa *TwoFactorAuth) GenerateBackupCodes() []string {
 	}
 	return codes
 }
+package auth
+
+import (
+	"crypto/rand"
+	"encoding/base32"
+	"fmt"
+
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
+)
+
+type TwoFactorManager struct{}
+
+func NewTwoFactorManager() *TwoFactorManager {
+	return &TwoFactorManager{}
+}
+
+func (tf *TwoFactorManager) GenerateSecret(username string) (string, string, error) {
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "AdminiSoftware",
+		AccountName: username,
+		SecretSize:  32,
+	})
+	if err != nil {
+		return "", "", err
+	}
+
+	return key.Secret(), key.URL(), nil
+}
+
+func (tf *TwoFactorManager) ValidateCode(secret, code string) bool {
+	return totp.Validate(code, secret)
+}
+
+func (tf *TwoFactorManager) GenerateBackupCodes() ([]string, error) {
+	codes := make([]string, 10)
+	for i := 0; i < 10; i++ {
+		code, err := tf.generateRandomCode()
+		if err != nil {
+			return nil, err
+		}
+		codes[i] = code
+	}
+	return codes, nil
+}
+
+func (tf *TwoFactorManager) generateRandomCode() (string, error) {
+	bytes := make([]byte, 5)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return base32.StdEncoding.EncodeToString(bytes)[:8], nil
+}
+
+func (tf *TwoFactorManager) GenerateQRCode(secret, username string) (string, error) {
+	key, err := otp.NewKeyFromURL(fmt.Sprintf("otpauth://totp/AdminiSoftware:%s?secret=%s&issuer=AdminiSoftware", username, secret))
+	if err != nil {
+		return "", err
+	}
+	return key.URL(), nil
+}
