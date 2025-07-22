@@ -324,3 +324,352 @@ export default {
   }
 }
 </script>
+<template>
+  <div class="accounts-list">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Account Management</h1>
+        <p class="text-gray-600">Manage user accounts and hosting packages</p>
+      </div>
+      <button
+        @click="$router.push('/admin/accounts/create')"
+        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+      >
+        Create Account
+      </button>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <SearchBar
+          v-model="searchTerm"
+          placeholder="Search accounts..."
+          @search="handleSearch"
+        />
+        <select
+          v-model="statusFilter"
+          @change="applyFilters"
+          class="border border-gray-300 rounded-lg px-3 py-2"
+        >
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="pending">Pending</option>
+        </select>
+        <select
+          v-model="packageFilter"
+          @change="applyFilters"
+          class="border border-gray-300 rounded-lg px-3 py-2"
+        >
+          <option value="">All Packages</option>
+          <option v-for="pkg in packages" :key="pkg.id" :value="pkg.id">
+            {{ pkg.name }}
+          </option>
+        </select>
+        <button
+          @click="resetFilters"
+          class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600"
+        >
+          Reset Filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Accounts Table -->
+    <div class="bg-white rounded-lg shadow">
+      <DataTable
+        :data="accounts"
+        :columns="columns"
+        :loading="loading"
+        @sort="handleSort"
+        @action="handleAction"
+      />
+      
+      <!-- Pagination -->
+      <div class="px-6 py-4 border-t border-gray-200">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            Showing {{ ((currentPage - 1) * pageSize) + 1 }} to 
+            {{ Math.min(currentPage * pageSize, totalAccounts) }} of 
+            {{ totalAccounts }} accounts
+          </div>
+          <div class="flex space-x-2">
+            <button
+              @click="prevPage"
+              :disabled="currentPage === 1"
+              class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span class="px-3 py-1">{{ currentPage }}</span>
+            <button
+              @click="nextPage"
+              :disabled="currentPage >= totalPages"
+              class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Modal -->
+    <Modal v-if="showModal" @close="showModal = false">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold mb-4">{{ modalTitle }}</h3>
+        <p class="text-gray-600 mb-6">{{ modalMessage }}</p>
+        <div class="flex justify-end space-x-3">
+          <button
+            @click="showModal = false"
+            class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmAction"
+            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </Modal>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted, computed } from 'vue'
+import { useAdminStore } from '@/store/admin'
+import { useNotifications } from '@/composables/useNotifications'
+import DataTable from '@/components/common/DataTable.vue'
+import SearchBar from '@/components/common/SearchBar.vue'
+import Modal from '@/components/common/Modal.vue'
+
+export default {
+  name: 'ListAccounts',
+  components: {
+    DataTable,
+    SearchBar,
+    Modal
+  },
+  setup() {
+    const adminStore = useAdminStore()
+    const notifications = useNotifications()
+
+    const accounts = ref([])
+    const packages = ref([])
+    const loading = ref(false)
+    const currentPage = ref(1)
+    const pageSize = ref(20)
+    const totalAccounts = ref(0)
+    const searchTerm = ref('')
+    const statusFilter = ref('')
+    const packageFilter = ref('')
+    const sortField = ref('created_at')
+    const sortOrder = ref('desc')
+
+    const showModal = ref(false)
+    const modalTitle = ref('')
+    const modalMessage = ref('')
+    const pendingAction = ref(null)
+
+    const columns = [
+      { key: 'username', label: 'Username', sortable: true },
+      { key: 'email', label: 'Email', sortable: true },
+      { key: 'package.name', label: 'Package', sortable: false },
+      { key: 'status', label: 'Status', sortable: true },
+      { key: 'created_at', label: 'Created', sortable: true },
+      { key: 'actions', label: 'Actions', sortable: false }
+    ]
+
+    const totalPages = computed(() => {
+      return Math.ceil(totalAccounts.value / pageSize.value)
+    })
+
+    const loadAccounts = async () => {
+      loading.value = true
+      try {
+        const params = {
+          page: currentPage.value,
+          limit: pageSize.value,
+          search: searchTerm.value,
+          status: statusFilter.value,
+          package: packageFilter.value,
+          sort: sortField.value,
+          order: sortOrder.value
+        }
+        
+        const response = await adminStore.getAccounts(params)
+        accounts.value = response.accounts
+        totalAccounts.value = response.total
+      } catch (error) {
+        notifications.error('Failed to load accounts')
+      } finally {
+        loading.value = false
+      }
+    }
+
+    const loadPackages = async () => {
+      try {
+        packages.value = await adminStore.getPackages()
+      } catch (error) {
+        console.error('Failed to load packages:', error)
+      }
+    }
+
+    const handleSearch = () => {
+      currentPage.value = 1
+      loadAccounts()
+    }
+
+    const applyFilters = () => {
+      currentPage.value = 1
+      loadAccounts()
+    }
+
+    const resetFilters = () => {
+      searchTerm.value = ''
+      statusFilter.value = ''
+      packageFilter.value = ''
+      currentPage.value = 1
+      loadAccounts()
+    }
+
+    const handleSort = (field, order) => {
+      sortField.value = field
+      sortOrder.value = order
+      loadAccounts()
+    }
+
+    const handleAction = (action, account) => {
+      switch (action) {
+        case 'view':
+          $router.push(`/admin/accounts/${account.id}`)
+          break
+        case 'edit':
+          $router.push(`/admin/accounts/${account.id}/edit`)
+          break
+        case 'suspend':
+          showConfirmModal(
+            'Suspend Account',
+            `Are you sure you want to suspend ${account.username}?`,
+            () => suspendAccount(account.id)
+          )
+          break
+        case 'unsuspend':
+          showConfirmModal(
+            'Unsuspend Account',
+            `Are you sure you want to unsuspend ${account.username}?`,
+            () => unsuspendAccount(account.id)
+          )
+          break
+        case 'delete':
+          showConfirmModal(
+            'Delete Account',
+            `Are you sure you want to delete ${account.username}? This action cannot be undone.`,
+            () => deleteAccount(account.id)
+          )
+          break
+      }
+    }
+
+    const showConfirmModal = (title, message, action) => {
+      modalTitle.value = title
+      modalMessage.value = message
+      pendingAction.value = action
+      showModal.value = true
+    }
+
+    const confirmAction = async () => {
+      if (pendingAction.value) {
+        await pendingAction.value()
+        pendingAction.value = null
+      }
+      showModal.value = false
+    }
+
+    const suspendAccount = async (accountId) => {
+      try {
+        await adminStore.suspendAccount(accountId)
+        notifications.success('Account suspended successfully')
+        loadAccounts()
+      } catch (error) {
+        notifications.error('Failed to suspend account')
+      }
+    }
+
+    const unsuspendAccount = async (accountId) => {
+      try {
+        await adminStore.unsuspendAccount(accountId)
+        notifications.success('Account unsuspended successfully')
+        loadAccounts()
+      } catch (error) {
+        notifications.error('Failed to unsuspend account')
+      }
+    }
+
+    const deleteAccount = async (accountId) => {
+      try {
+        await adminStore.deleteAccount(accountId)
+        notifications.success('Account deleted successfully')
+        loadAccounts()
+      } catch (error) {
+        notifications.error('Failed to delete account')
+      }
+    }
+
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--
+        loadAccounts()
+      }
+    }
+
+    const nextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        currentPage.value++
+        loadAccounts()
+      }
+    }
+
+    onMounted(() => {
+      loadAccounts()
+      loadPackages()
+    })
+
+    return {
+      accounts,
+      packages,
+      loading,
+      currentPage,
+      pageSize,
+      totalAccounts,
+      totalPages,
+      searchTerm,
+      statusFilter,
+      packageFilter,
+      columns,
+      showModal,
+      modalTitle,
+      modalMessage,
+      handleSearch,
+      applyFilters,
+      resetFilters,
+      handleSort,
+      handleAction,
+      confirmAction,
+      prevPage,
+      nextPage
+    }
+  }
+}
+</script>
+
+<style scoped>
+.accounts-list {
+  @apply p-6;
+}
+</style>

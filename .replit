@@ -3,3 +3,19 @@ modules = ["bash"]
 [nix]
 channel = "stable-24_05"
 packages = ["unzip"]
+
+[workflows]
+runButton = "Development Server"
+
+[[workflows.workflow]]
+name = "Development Server"
+author = 45370185
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd AdminiSoftware/backend && go run cmd/main.go"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd AdminiSoftware/frontend && npm run dev"

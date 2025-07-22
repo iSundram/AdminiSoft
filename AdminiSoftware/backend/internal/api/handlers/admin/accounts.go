@@ -427,3 +427,133 @@ func (h *AccountHandler) GetAccountStats(c *gin.Context) {
 
 	c.JSON(http.StatusOK, stats)
 }
+package admin
+
+import (
+	"AdminiSoftware/internal/models"
+	"AdminiSoftware/internal/services"
+	"AdminiSoftware/internal/utils"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+type AccountHandler struct {
+	accountService *services.AccountService
+	logger        *utils.Logger
+}
+
+func NewAccountHandler(accountService *services.AccountService, logger *utils.Logger) *AccountHandler {
+	return &AccountHandler{
+		accountService: accountService,
+		logger:        logger,
+	}
+}
+
+func (h *AccountHandler) GetAccounts(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	
+	accounts, total, err := h.accountService.GetAccountsPaginated(page, limit)
+	if err != nil {
+		h.logger.Error("Failed to get accounts: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve accounts"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"accounts": accounts,
+		"total":    total,
+		"page":     page,
+		"limit":    limit,
+	})
+}
+
+func (h *AccountHandler) CreateAccount(c *gin.Context) {
+	var req models.CreateAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	account, err := h.accountService.CreateAccount(&req)
+	if err != nil {
+		h.logger.Error("Failed to create account: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create account"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"account": account})
+}
+
+func (h *AccountHandler) UpdateAccount(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	var req models.UpdateAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	account, err := h.accountService.UpdateAccount(uint(id), &req)
+	if err != nil {
+		h.logger.Error("Failed to update account: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"account": account})
+}
+
+func (h *AccountHandler) DeleteAccount(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	if err := h.accountService.DeleteAccount(uint(id)); err != nil {
+		h.logger.Error("Failed to delete account: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Account deleted successfully"})
+}
+
+func (h *AccountHandler) SuspendAccount(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	if err := h.accountService.SuspendAccount(uint(id)); err != nil {
+		h.logger.Error("Failed to suspend account: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to suspend account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Account suspended successfully"})
+}
+
+func (h *AccountHandler) UnsuspendAccount(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid account ID"})
+		return
+	}
+
+	if err := h.accountService.UnsuspendAccount(uint(id)); err != nil {
+		h.logger.Error("Failed to unsuspend account: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to unsuspend account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Account unsuspended successfully"})
+}

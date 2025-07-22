@@ -295,3 +295,208 @@ func (s *AccountService) countUserDatabases(userID uint) int64 {
 	s.db.Model(&models.Database{}).Where("user_id = ?", userID).Count(&count)
 	return count
 }
+package services
+
+import (
+	"AdminiSoftware/internal/models"
+	"AdminiSoftware/internal/utils"
+	"errors"
+	"fmt"
+
+	"gorm.io/gorm"
+)
+
+type AccountService struct {
+	db     *gorm.DB
+	logger *utils.Logger
+}
+
+func NewAccountService(db *gorm.DB, logger *utils.Logger) *AccountService {
+	return &AccountService{
+		db:     db,
+		logger: logger,
+	}
+}
+
+func (s *AccountService) GetAccountsPaginated(page, limit int) ([]models.User, int64, error) {
+	var accounts []models.User
+	var total int64
+
+	offset := (page - 1) * limit
+
+	if err := s.db.Model(&models.User{}).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := s.db.Preload("Package").Offset(offset).Limit(limit).Find(&accounts).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return accounts, total, nil
+}
+
+func (s *AccountService) CreateAccount(req *models.CreateAccountRequest) (*models.User, error) {
+	// Check if username already exists
+	var existing models.User
+	if err := s.db.Where("username = ?", req.Username).First(&existing).Error; err == nil {
+		return nil, errors.New("username already exists")
+	}
+
+	// Check if email already exists
+	if err := s.db.Where("email = ?", req.Email).First(&existing).Error; err == nil {
+		return nil, errors.New("email already exists")
+	}
+
+	// Hash password
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %v", err)
+	}
+
+	// Create user
+	user := &models.User{
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: hashedPassword,
+		PackageID:    req.PackageID,
+		Role:         "user",
+		Status:       "active",
+	}
+
+	if err := s.db.Create(user).Error; err != nil {
+		return nil, fmt.Errorf("failed to create user: %v", err)
+	}
+
+	// Create domain
+	domain := &models.Domain{
+		UserID:       user.ID,
+		Domain:       req.Domain,
+		DocumentRoot: "/public_html",
+		Status:       "active",
+	}
+
+	if err := s.db.Create(domain).Error; err != nil {
+		s.logger.Error("Failed to create domain for user: " + err.Error())
+		// Don't fail the account creation for domain creation failure
+	}
+
+	// Load package information
+	if err := s.db.Preload("Package").First(user, user.ID).Error; err != nil {
+		s.logger.Error("Failed to load package info: " + err.Error())
+	}
+
+	s.logger.Info(fmt.Sprintf("Account created successfully for user: %s", user.Username))
+	return user, nil
+}
+
+func (s *AccountService) UpdateAccount(id uint, req *models.UpdateAccountRequest) (*models.User, error) {
+	var user models.User
+	if err := s.db.First(&user, id).Error; err != nil {
+		return nil, errors.New("account not found")
+	}
+
+	// Update fields if provided
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+	if req.PackageID != 0 {
+		user.PackageID = req.PackageID
+	}
+	if req.Status != "" {
+		user.Status = req.Status
+	}
+
+	if err := s.db.Save(&user).Error; err != nil {
+		return nil, fmt.Errorf("failed to update account: %v", err)
+	}
+
+	// Load package information
+	if err := s.db.Preload("Package").First(&user, user.ID).Error; err != nil {
+		s.logger.Error("Failed to load package info: " + err.Error())
+	}
+
+	s.logger.Info(fmt.Sprintf("Account updated successfully for user: %s", user.Username))
+	return &user, nil
+}
+
+func (s *AccountService) DeleteAccount(id uint) error {
+	var user models.User
+	if err := s.db.First(&user, id).Error; err != nil {
+		return errors.New("account not found")
+	}
+
+	// Begin transaction
+	tx := s.db.Begin()
+
+	// Delete related records
+	if err := tx.Where("user_id = ?", id).Delete(&models.Domain{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to delete domains: %v", err)
+	}
+
+	if err := tx.Where("user_id = ?", id).Delete(&models.Database{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to delete databases: %v", err)
+	}
+
+	if err := tx.Where("user_id = ?", id).Delete(&models.Email{}).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to delete emails: %v", err)
+	}
+
+	// Delete user
+	if err := tx.Delete(&user).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to delete user: %v", err)
+	}
+
+	tx.Commit()
+	s.logger.Info(fmt.Sprintf("Account deleted successfully for user: %s", user.Username))
+	return nil
+}
+
+func (s *AccountService) SuspendAccount(id uint) error {
+	var user models.User
+	if err := s.db.First(&user, id).Error; err != nil {
+		return errors.New("account not found")
+	}
+
+	user.Status = "suspended"
+	if err := s.db.Save(&user).Error; err != nil {
+		return fmt.Errorf("failed to suspend account: %v", err)
+	}
+
+	s.logger.Info(fmt.Sprintf("Account suspended for user: %s", user.Username))
+	return nil
+}
+
+func (s *AccountService) UnsuspendAccount(id uint) error {
+	var user models.User
+	if err := s.db.First(&user, id).Error; err != nil {
+		return errors.New("account not found")
+	}
+
+	user.Status = "active"
+	if err := s.db.Save(&user).Error; err != nil {
+		return fmt.Errorf("failed to unsuspend account: %v", err)
+	}
+
+	s.logger.Info(fmt.Sprintf("Account unsuspended for user: %s", user.Username))
+	return nil
+}
+
+func (s *AccountService) GetAccountByID(id uint) (*models.User, error) {
+	var user models.User
+	if err := s.db.Preload("Package").First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (s *AccountService) GetAccountByUsername(username string) (*models.User, error) {
+	var user models.User
+	if err := s.db.Where("username = ?", username).Preload("Package").First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
+}

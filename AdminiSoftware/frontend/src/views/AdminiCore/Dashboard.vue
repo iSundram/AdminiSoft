@@ -242,3 +242,232 @@ export default {
 }
 </script>
 </template>
+<template>
+  <div class="admin-dashboard">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <h1 class="text-3xl font-bold text-gray-900">AdminiCore Dashboard</h1>
+      <p class="text-gray-600">System Administrator Control Panel</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <StatsCard
+        title="Total Accounts"
+        :value="stats.totalAccounts"
+        icon="users"
+        color="blue"
+        :trend="stats.accountsTrend"
+      />
+      <StatsCard
+        title="Active Domains"
+        :value="stats.activeDomains"
+        icon="globe"
+        color="green"
+        :trend="stats.domainsTrend"
+      />
+      <StatsCard
+        title="Server Load"
+        :value="stats.serverLoad + '%'"
+        icon="cpu"
+        color="orange"
+        :trend="stats.loadTrend"
+      />
+      <StatsCard
+        title="Total Storage"
+        :value="formatBytes(stats.totalStorage)"
+        icon="hard-drive"
+        color="purple"
+        :trend="stats.storageTrend"
+      />
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Server Status -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Server Status</h2>
+          <SystemStatus :status="systemStatus" />
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+          <QuickActions :actions="quickActions" @action="handleQuickAction" />
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+          <RecentActivity :activities="recentActivities" />
+        </div>
+      </div>
+
+      <!-- Resource Usage -->
+      <div>
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Resource Usage</h2>
+          <ResourceUsage :usage="resourceUsage" />
+        </div>
+      </div>
+
+      <!-- System Performance -->
+      <div class="lg:col-span-3">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">System Performance</h2>
+          <Chart :data="performanceData" type="line" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Security Alerts -->
+    <div v-if="securityAlerts.length > 0" class="mt-6">
+      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <h3 class="text-lg font-semibold text-red-800 mb-2">Security Alerts</h3>
+        <div class="space-y-2">
+          <div
+            v-for="alert in securityAlerts"
+            :key="alert.id"
+            class="flex items-center justify-between"
+          >
+            <span class="text-red-700">{{ alert.message }}</span>
+            <button
+              @click="dismissAlert(alert.id)"
+              class="text-red-600 hover:text-red-800"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted } from 'vue'
+import { useAdminStore } from '@/store/admin'
+import StatsCard from '@/components/common/StatsCard.vue'
+import SystemStatus from '@/components/widgets/SystemStatus.vue'
+import QuickActions from '@/components/widgets/QuickActions.vue'
+import RecentActivity from '@/components/widgets/RecentActivity.vue'
+import ResourceUsage from '@/components/widgets/ResourceUsage.vue'
+import Chart from '@/components/common/Chart.vue'
+
+export default {
+  name: 'AdminDashboard',
+  components: {
+    StatsCard,
+    SystemStatus,
+    QuickActions,
+    RecentActivity,
+    ResourceUsage,
+    Chart
+  },
+  setup() {
+    const adminStore = useAdminStore()
+    
+    const stats = ref({
+      totalAccounts: 0,
+      activeDomains: 0,
+      serverLoad: 0,
+      totalStorage: 0,
+      accountsTrend: 0,
+      domainsTrend: 0,
+      loadTrend: 0,
+      storageTrend: 0
+    })
+
+    const systemStatus = ref([])
+    const quickActions = ref([
+      { id: 'create-account', label: 'Create Account', icon: 'user-plus' },
+      { id: 'backup-system', label: 'System Backup', icon: 'download' },
+      { id: 'restart-services', label: 'Restart Services', icon: 'refresh' },
+      { id: 'view-logs', label: 'View Logs', icon: 'file-text' }
+    ])
+
+    const recentActivities = ref([])
+    const resourceUsage = ref({})
+    const performanceData = ref({})
+    const securityAlerts = ref([])
+
+    const formatBytes = (bytes) => {
+      if (bytes === 0) return '0 Bytes'
+      const k = 1024
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
+
+    const handleQuickAction = async (actionId) => {
+      switch (actionId) {
+        case 'create-account':
+          await $router.push('/admin/accounts/create')
+          break
+        case 'backup-system':
+          await adminStore.createSystemBackup()
+          break
+        case 'restart-services':
+          await adminStore.restartServices()
+          break
+        case 'view-logs':
+          await $router.push('/admin/logs')
+          break
+      }
+    }
+
+    const dismissAlert = async (alertId) => {
+      await adminStore.dismissSecurityAlert(alertId)
+      securityAlerts.value = securityAlerts.value.filter(alert => alert.id !== alertId)
+    }
+
+    const loadDashboardData = async () => {
+      try {
+        const data = await adminStore.getDashboardData()
+        stats.value = data.stats
+        systemStatus.value = data.systemStatus
+        recentActivities.value = data.recentActivities
+        resourceUsage.value = data.resourceUsage
+        performanceData.value = data.performanceData
+        securityAlerts.value = data.securityAlerts
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error)
+      }
+    }
+
+    onMounted(() => {
+      loadDashboardData()
+      // Refresh data every 30 seconds
+      setInterval(loadDashboardData, 30000)
+    })
+
+    return {
+      stats,
+      systemStatus,
+      quickActions,
+      recentActivities,
+      resourceUsage,
+      performanceData,
+      securityAlerts,
+      formatBytes,
+      handleQuickAction,
+      dismissAlert
+    }
+  }
+}
+</script>
+
+<style scoped>
+.admin-dashboard {
+  @apply p-6;
+}
+
+.dashboard-header {
+  @apply mb-8;
+}
+</style>
