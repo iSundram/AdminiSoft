@@ -80,3 +80,48 @@ func getEnvAsBool(key string, defaultValue bool) bool {
 	}
 	return defaultValue
 }
+package config
+
+import (
+	"log"
+	"os"
+
+	"github.com/joho/godotenv"
+)
+
+type Config struct {
+	Port         string
+	DatabaseURL  string
+	RedisURL     string
+	JWTSecret    string
+	Environment  string
+	LogLevel     string
+}
+
+func LoadConfig() *Config {
+	// Load .env file if it exists
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	return &Config{
+		Port:        getEnv("PORT", "5000"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:password@localhost/adminisoftware?sslmode=disable"),
+		RedisURL:    getEnv("REDIS_URL", "redis://localhost:6379"),
+		JWTSecret:   getEnv("JWT_SECRET", "adminisoftware-secret-key"),
+		Environment: getEnv("ENVIRONMENT", "development"),
+		LogLevel:    getEnv("LOG_LEVEL", "info"),
+	}
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// Legacy function for compatibility
+func Load() *Config {
+	return LoadConfig()
+}

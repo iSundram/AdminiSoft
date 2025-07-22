@@ -185,3 +185,125 @@ func SetupRouter(db *gorm.DB, redis *redis.Client, logger *utils.Logger) *gin.En
 
 	return router
 }
+package api
+
+import (
+	"AdminiSoftware/internal/api/handlers"
+	"AdminiSoftware/internal/api/handlers/admin"
+	"AdminiSoftware/internal/api/handlers/reseller"
+	"AdminiSoftware/internal/api/handlers/user"
+	"AdminiSoftware/internal/api/middleware"
+	"AdminiSoftware/internal/utils"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+)
+
+func SetupRoutes(r *gin.Engine, db *gorm.DB, redis *redis.Client) {
+	// Initialize logger
+	logger := utils.NewLogger()
+	
+	// Middleware
+	r.Use(middleware.CORS())
+	r.Use(middleware.Logging(logger))
+	r.Use(middleware.RateLimit(redis))
+	
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+	
+	// API routes
+	api := r.Group("/api/v1")
+	
+	// Auth routes (public)
+	authHandler := handlers.NewAuthHandler(db, redis, logger)
+	api.POST("/login", authHandler.Login)
+	api.POST("/register", authHandler.Register)
+	api.POST("/forgot-password", authHandler.ForgotPassword)
+	api.POST("/reset-password", authHandler.ResetPassword)
+	
+	// Protected routes
+	protected := api.Group("/")
+	protected.Use(middleware.JWTAuth(db, redis))
+	
+	// Admin routes
+	adminGroup := protected.Group("/admin")
+	adminGroup.Use(middleware.RequireRole("admin"))
+	{
+		accountHandler := admin.NewAccountHandler(db, logger)
+		adminGroup.GET("/accounts", accountHandler.ListAccounts)
+		adminGroup.POST("/accounts", accountHandler.CreateAccount)
+		adminGroup.PUT("/accounts/:id", accountHandler.UpdateAccount)
+		adminGroup.DELETE("/accounts/:id", accountHandler.DeleteAccount)
+		
+		dnsHandler := admin.NewDNSHandler(db, logger)
+		adminGroup.GET("/dns", dnsHandler.ListZones)
+		adminGroup.POST("/dns", dnsHandler.CreateZone)
+		adminGroup.PUT("/dns/:id", dnsHandler.UpdateZone)
+		adminGroup.DELETE("/dns/:id", dnsHandler.DeleteZone)
+		
+		sslHandler := admin.NewSSLHandler(db, logger)
+		adminGroup.GET("/ssl", sslHandler.ListCertificates)
+		adminGroup.POST("/ssl", sslHandler.CreateCertificate)
+		adminGroup.DELETE("/ssl/:id", sslHandler.DeleteCertificate)
+	}
+	
+	// Reseller routes
+	resellerGroup := protected.Group("/reseller")
+	resellerGroup.Use(middleware.RequireRole("reseller", "admin"))
+	{
+		accountHandler := reseller.NewAccountHandler(db, logger)
+		resellerGroup.GET("/accounts", accountHandler.ListAccounts)
+		resellerGroup.POST("/accounts", accountHandler.CreateAccount)
+		resellerGroup.PUT("/accounts/:id", accountHandler.UpdateAccount)
+		
+		packageHandler := reseller.NewPackageHandler(db, logger)
+		resellerGroup.GET("/packages", packageHandler.ListPackages)
+		resellerGroup.POST("/packages", packageHandler.CreatePackage)
+		resellerGroup.PUT("/packages/:id", packageHandler.UpdatePackage)
+		resellerGroup.DELETE("/packages/:id", packageHandler.DeletePackage)
+	}
+	
+	// User routes
+	userGroup := protected.Group("/user")
+	{
+		domainHandler := user.NewDomainHandler(db, logger)
+		userGroup.GET("/domains", domainHandler.ListDomains)
+		userGroup.POST("/domains", domainHandler.AddDomain)
+		userGroup.DELETE("/domains/:id", domainHandler.DeleteDomain)
+		
+		emailHandler := user.NewEmailHandler(db, logger)
+		userGroup.GET("/emails", emailHandler.ListEmails)
+		userGroup.POST("/emails", emailHandler.CreateEmail)
+		userGroup.DELETE("/emails/:id", emailHandler.DeleteEmail)
+		
+		dbHandler := user.NewDatabaseHandler(db, logger)
+		userGroup.GET("/databases", dbHandler.ListDatabases)
+		userGroup.POST("/databases", dbHandler.CreateDatabase)
+		userGroup.DELETE("/databases/:id", dbHandler.DeleteDatabase)
+		
+		fileHandler := user.NewFileHandler(db, logger)
+		userGroup.GET("/files", fileHandler.ListFiles)
+		userGroup.POST("/files", fileHandler.UploadFile)
+		userGroup.DELETE("/files/:id", fileHandler.DeleteFile)
+		
+		appHandler := user.NewAppHandler(db, logger)
+		userGroup.GET("/apps", appHandler.ListApps)
+		userGroup.POST("/apps", appHandler.InstallApp)
+		userGroup.DELETE("/apps/:id", appHandler.UninstallApp)
+		
+		sslHandler := user.NewSSLHandler(db, logger)
+		userGroup.GET("/ssl", sslHandler.ListCertificates)
+		userGroup.POST("/ssl", sslHandler.RequestCertificate)
+		
+		statsHandler := user.NewStatsHandler(db, logger)
+		userGroup.GET("/stats", statsHandler.GetStats)
+		
+		wpHandler := user.NewWordPressHandler(db, logger)
+		userGroup.GET("/wordpress", wpHandler.ListSites)
+		userGroup.POST("/wordpress", wpHandler.CreateSite)
+		userGroup.PUT("/wordpress/:id", wpHandler.UpdateSite)
+	}
+}
