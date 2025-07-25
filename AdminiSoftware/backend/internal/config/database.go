@@ -25,6 +25,7 @@ func InitDatabase(cfg *Config) (*gorm.DB, error) {
 		&models.DNSZone{},
 		&models.UserStats{},
 		&models.SystemStat{},
+		&models.Application{},
 	)
 	
 	if err != nil {
