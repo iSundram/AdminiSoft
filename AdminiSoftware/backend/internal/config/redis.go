@@ -18,37 +18,3 @@ func InitRedis(cfg *Config) *redis.Client {
 	
 	return client
 }
-package config
-
-import (
-	"context"
-	"time"
-
-	"github.com/go-redis/redis/v8"
-)
-
-func InitRedis(cfg *Config) *redis.Client {
-	opt, err := redis.ParseURL(cfg.RedisURL)
-	if err != nil {
-		// Fallback to default settings
-		opt = &redis.Options{
-			Addr:     "localhost:6379",
-			Password: "",
-			DB:       0,
-		}
-	}
-
-	rdb := redis.NewClient(opt)
-
-	// Test connection
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	_, err = rdb.Ping(ctx).Result()
-	if err != nil {
-		// Handle connection error gracefully
-		return nil
-	}
-
-	return rdb
-}
